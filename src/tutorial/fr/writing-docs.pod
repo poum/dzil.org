@@ -1,0 +1,125 @@
+
+=head1 Ecrire une documentation améliorée par Zilla
+
+=head2 Eradication de la documentation passe-partout
+
+Le CPAN possède de bons standards communautaires pour la documentation. Le format
+de documentation L<Pod|perlpod> rend également assez facile d'écrire de la documentation.
+Le gros problème réside dans toute cette documentation passe-partout rébarbative que vous
+vous attendez à écrire. Prenons ce document hypothétique :
+
+  #!synmux
+  #!vim perl
+  package Your::Library;
+  #!vim pod
+
+  =head1 NAME
+
+  Your::Library - a really awesome library
+
+  =head1 VERSION
+
+  version 1.234
+
+  =head1 SYNOPSIS
+
+    ...
+
+  =head1 METHODS
+
+  =head2 méthod_x
+
+  This method does something experimental.
+
+  =head2 méthod_y
+
+  This method returns a reason.
+
+  =head1 SEE ALSO
+
+  =over 4
+
+  =item *
+
+  L<Your::Module>
+
+  =item *
+
+  L<Your::Package>
+
+  =back
+
+  =head1 AUTHOR
+
+    E. Xavier Ample <example@example.com>
+
+  =head1 COPYRIGHT AND LICENSE
+
+  This software is copyright (c) 2010 by E. Xavier Ample.
+
+  This is free software; you can redistribute it and/or modify it under the
+  same terms as the Perl 5 programming language system itself.
+
+Donc, dans les 50 lignes ci-dessus ou à peu près, seules environs dix sont spécifiques
+au paquetage ou intéressantes à maintenir. Les outils de "démarrage" d'une distribution
+peut prendre en charge ces lieux communs, mais c'est à vous qu'il revient de les maintenir
+mais c'est un boulet. Avec la configuration appropriée, Dist::Zilla vous permettra
+de remplacer la documentation précédente par :
+
+  #!synmux
+  #!vim perl
+  package Votre::Bivliothèque;
+  # ABSTRACT: une bibliothèque vraiment géniale
+  #!vim pod
+
+  =head1 SYNOPSIS
+
+    ...
+
+  =method méthode_x
+
+  Cette méthode fait quelque chose d'expérimental.
+
+  =method méthode_y
+
+  Cette méthode retourne une raison.
+
+  =head1 SEE ALSO
+
+  =for :list
+  * L<Votre::Module>
+  * L<Votre::Paquetage>
+
+Maintenant, la seule documentation que vous avez écrit est la documentation dont
+vous vous souciez. Tout le reste ne sera écrit qu'au moment où se sera nécessaire
+et ajouté à chaque fois que vous livrerez, si bien qu'il sera toujours utilisé la dernière
+version de votre agencement et de votre configuration préférés. Ceci est réalisé par L<Pod::Weaver>.
+
+=head2 Utiliser Pod::Weaver
+
+Pour tirer le meilleur de Pod::Weaver, ajoutez simplement cette ligne à votre
+F<dist.ini>:
+
+  #!vim dosini
+  [PodWeaver]
+
+Ceci va ajouter pour chaque module, les sections name, abstract, version, authors
+et licence (nom, résumé, version, auteurs et licences) ainsi qu'un paquet d'autres
+parties comme le synopsys et les méthodes. Il vous permettra d'utiliser les sections
+auto-organisées C<=method>, C<=attr> et C<=func> des commandes pour les méthodes, 
+les attributs et les fonctions.
+
+Pour la syntaxe en format court des listes montrées ci-dessus, vous aurait besoin
+d'apporter un autre plugin Pod::Weaver. Une façon est d'ajouter un fichier F<weaver.ini> dans
+le répertoire de votre distribution et d'y mettre ce qui suit :
+
+  #!vim dosini
+  [@Default]
+
+  [-Transformer]
+  transformer = List
+
+Ceci configure touts les plugins par défaut ainsi qu'un plugin pour
+L<Pod::Elemental::Transformer::List>.
+
+Pod::Weaver ne peut pas fonctionner si vous avez du Pod dans des chaînes de caractères littérales.

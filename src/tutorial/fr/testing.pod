@@ -1,0 +1,51 @@
+
+=head1 Tester votre distribution
+
+Dist::Zilla vous évite de perdre beaucoup de temps sur des choses comme la
+documentation générique et le remplacement des numéros de version. Vous 
+pouvez ré-utiliser ce temps libre pour écrire de meilleurs tests, pas vrai ?
+En effet ! Bien sûr, une fois les tests écrits, vous serez capable de les
+exécuter.
+
+=head2 Utiliser C<prove> pour exécuter les tests
+
+Peu importe quelle configuration vous utilisez, tester une distribution sera
+habituellement possible avec la commande shell toute simple :
+
+  $ prove -lr t
+
+Ceci utilise le programme L<prove> pour exécuter les fichiers de tests présents
+sous F<./t> en utilisant les bibliothèques présentes dans F<./lib>. Dist::Zilla
+ne sera pas impliqué, donc cela peut être exécuté très rapidement. Il y a cependant
+certaines choses à garder à l'esprit :
+
+=for :list
+* Si vos variables C<$VERSION> sont fournies par Dist::Zilla, elles ne seront pas présentes.
+* Si Dist::Zilla contruits les fichiers nécessaires pour vos tests, ils ne seront pas présents.
+* Si votre distribution utilise XS, cela ne fonctionnera probablement pas.
+
+=head2 Utiliser C<dzil test> pour exécuter les tests
+
+Si votre distribution a besoin d'être construire pour que vos tests soient exécutés,
+ou si vous voulez simplement vous assurez que vos tests continuent à fonctionner
+avec la version construite de votre distribution, vous pouvez exécuter une autre
+commande simple :
+
+  $ dzil test
+
+Ceci va construire votre distribution et exécuter ses tests dans le répertoire de construction.
+Cela doit se passer exactement de la même façon que pour un utilisateur essaiera de le faire lors
+de l'installation. Si tous les tests réussissent, le répertoire de construction sera supprimé à l'issue.
+Si les tests échouent, il sera laissé en place afin que vous puissiez investiguer le problème.
+
+=head2 Exécuter vos tests avant de livrer
+
+Vous devez exécuter vos tests B<immédiatement> avant de livrer votre code pour
+être sûr que les choses que vous êtes sur le point d'envoyer fonctionnent. Vous
+pouvez demander à Dist::Zilla d'exécuter vos tests en tant que partie du processus
+de livraison, interrompant la livraison s'ils échouent mais en la poursuivant s'ils
+réussissent tous.
+
+=for cyoa
+? how-build-works ? apprendre comment Dist::Zilla construit votre distribution
+? release         ? apprendre comment livrer votre distribution fraîchement testée
