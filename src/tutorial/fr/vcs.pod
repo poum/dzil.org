@@ -1,0 +1,13 @@
+
+=head1 Intégrez le processus de livraison avec votre VCS
+
+En s'intégrant avec votre processus de contrôle de version, Dist::Zilla peut 
+s'assurer que nous suivez toujours votre procédure et que vous n'oubliez jamais
+de vérifier que vous avez la version à jour, que nous n'avez jamais oublié de marquer une livraison
+et que vous avez toujours soumis les modifications que vous avez introduites via 
+le processus de livraison.
+
+=for cyoa
+? vcs-git ? intégrer Dist::Zilla avec Git
+? vcs-svn ? intégrer Dist::Zilla avec Subversion
+? vcs-diy ? écrire une intégration de Dist::Zilla avec votre propre VCS

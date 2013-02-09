@@ -1,0 +1,92 @@
+
+=head1 Intégrer Dist::Zilla avec Git
+
+Pour la plus grande part, intégrer votre distribution Dist::Zilla avec votre
+dépôt Git est aussi simple que d'installer L<Dist::Zilla::Plugin::Git> et d'ajouter
+une ligne dans votre configuration :
+
+  #!vim dosini
+  [@Git]
+
+(Vous voudrez probablement ajouter cela I<avant> @Basic ou @Classic, si vous
+utilisez l'un ou l'autre.)
+
+=head2 L'ensemble @Git
+
+L'ensemble de plugins Git est équivalent à :
+
+  #!vim dosini
+  [Git::Check]
+  [Git::Commit]
+  [Git::Tag]
+  [Git::Push]
+
+Git::Check refusera de livrer votre distribution si vous avez des modification
+non soumises ou des fichiers non suivis dans votre arborescende de travail. Par défaut,
+il fera une exception pour votre fichier F<Changes> et votre fichier F<dist.ini>, mais vous
+pouvez fournir votre propre liste de fichiers autorisés à être sales en donnant des valeurs
+au paramètre de configuration C<allow_dirty>. Git::Check respecte F<.gitignore>, si bien
+que vous pouvez l'utiliser pour signaler des fichiers qui ne doivraient pas être pris en compte,
+tels que F<.build> ou toutes archives de construction ou tout répertoire avec un nom tel que F<Votre-Dist-*>.
+
+Le reste des plugins s'exécute, dans l'ordre, après la livraison.
+
+Git::Commit soumet (commit) toute modification faite durant le processus de construction. 
+La justification la plus courante pour ce plugin est de soumettre les modifications faites
+à votre journal de modifications (changelog) par le plugin NextRelease. NextRelease ajoute
+un horodatage et un numéro de version en tête de votre journal des modifications puis 
+sauvegarde ces modifications (ainsi qu'un emplacement pour la prochaine version) sur le disque.
+Le plugin Git::Commit va alors soumettre ces modifications de telle sorte que la date et la version
+de votre dernière livraison seront enregistrées dans votre historique. Pour que ceci
+fonctionne, il est I<vital> que vous vous assuriez que le plugin Git::Commit s'exécute
+I<après> NextRelease. Puisque ce sont tous deux des plugins post-livraison, ceci signifie
+simplement de s'assurer qu'ils sont ordonnés correctement dans votre configuration.
+Git::Check s'attend à trouver un fichier F<Changes> dans le répertoire principal de votre
+distribution, donc assurez-vous d'en avoir un.
+
+Git::Tag crée un tag de votre nouvelle version de livraison. Par défaut, il
+marquera la livraison 1.234 avec l'étiquette "v1.234" mais vous pouvez modifier 
+ce format en fournissant une chaîne de type sprintf au paramètre C<tag_format> de Git::Tag.
+Par exemple, pour obtenir une étiquette telle que "Votre-Dist-V-1.234", vous pourriez positionner C<tag_format> à C<%N-V-%v>.
+Git::Tag crée des étiquettes annotées et nous pouvez ajuster le message d'étiquette avec
+le paramètre C<tag_message>.
+
+Enfin, Git::Push poussera à la fois les commits et les étiquettes à votre ou à vos 
+dépôts distants. Par défaut, il les pousse vers F<origin> mais vous pouvez fournir
+un ou plusieurs dépots distants avec le paramètre C<push_to>.
+
+L'ensemble Git transmettra toute configuration que vous lui donnerez pour ces plugins
+inclus, si bien que vous pouvez configurer les plugins via l'ensemble, comme ceci par
+exemple :
+
+  #!vim dosini
+  [@Git]
+  tag_format = release-%v
+  push_to    = public
+
+=head2 Utiliser les plugins Git sans l'ensemble
+
+Bien que l'ensemble de plugin Git vous donne un formidable ensemble de comportements
+par défaut, il peut ne pas correspondre tout à fait à votre processus. Vous pouvez
+utiliser n'importe leque des plugins décrits précédemment isolément. Par exemple,
+si tout ce que vous voulez, c'est de vous assurer que vous avez soumis avant de livrer,
+vous pouvez vous contenter d'ajouter seulement Git::Check et prendre soin vous-même
+de tout le reste.
+
+De même, si vous n'avez pas de dépôt distant vers lequel pousser vos modifications, 
+vous voudrez vous dispenser de Git::Push. Dans le cas contraire, il lancera une exception
+quand il s'apercevra qu'il n'a pas d'endroit vers lequel pousser les modifications.
+
+=head2 Git et la création de fabrication
+
+La commande C<dzil new> vous permet d'utiliser Dist::Zilla pour construire une nouvelle distribution, 
+et il existe des plugins de fabrication qui vous aident à lier votre utilisation de git à celle de 
+Dist::Zilla. Git::Init, par exemple, crée un nouveau dépôt git dans le répertoire de votre distribution
+nouvellement créée et fait partie de la même distribution que les autres plugins Git
+décrits précédemment. Le plugin GithibCreate crée un dépôt distant sur
+L<GitHub|http://github.com/>.
+
+=for cyoa
+? versioning   ? apprendre ce qui concerne la gestion des numéros de version avec Dist::Zilla
+? release      ? apprendre comment livrer votre distribution sur CPAN
+? minting-profile ? apprendre comment personnaliser votre profil de fabrication C<dzil new>

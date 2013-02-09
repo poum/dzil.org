@@ -1,0 +1,86 @@
+
+=head1 Gérer la numérotation de version avec Dist::Zilla
+
+Dist::Zilla a besoin de connaître la version de la distribution qu'il est sur
+le point de livrer de façon à ce qu'il puisse contruire vos données 
+F<META.json> et nommer votre archive tar, mais cela peut également être utile pour
+l'intégration au VCS, à la gestion du journal des modifications et à plein d'autres
+choses. La façon la plus simple d'indiquer la version de votre distribution est de
+la mettre dans votre F<dist.ini> :
+
+  #!vim dosini
+  name    = Ma-Dist
+  version = 1.234
+
+Il existe un certain nombre de plugins qui mettent votre numéro de version à utiliser.
+L<PkgVersion|Dist::Zilla::Plugin::PkgVersion> insère une définition de C<$VERSION> 
+dans tous vos packages si bien qu'ils ont tous une version correspondant à la
+version de la distribution.
+L<NextRelease|Dist::Zilla::Plugin::NextRelease> ajoute des en-têtes de version 
+à votre fichier de suivi des modifications de telle sorte qu nous n'avez pas besoin
+de vous préoccuper de ce que sera le prochain numéro de version jusqu'au moment
+de la construire. 
+L<PodVersion|Dist::Zilla::Plugin::PodVersion>
+ou L<PodWeaver|Dist::Zilla::Plugin::PodWeaver> peuvent insérer une section
+C<< =head1 VERSION >> dans votre documentation. Le système de plugin
+d'L<plugin d'intégration Git |@vcs-git> utilise votre version pour marquer les livraisons.
+
+Tous ces plugins suivent un long chemin pour prendre soin de la prise en compte
+de la version à votre place. PkgVersion et les parseurs de Pod notamment éliminent le besoin de 
+mettre à jour de multiples fichiers de nombreuses façons.
+
+L'étape d'après pour laisser Dist::Zilla vous aider à gérer vos versions consiste
+à le laisser également gérer la numérotation de votre version. 
+
+=head2 Le plugin Plugin
+
+L<AutoVersion|Dist::Zilla::Plugin::AutoVersion> est un plugin simple qui détermine
+automatiquement votre numéro de version en utilisant un format de type 
+C<sprintf> utilisant L<String::Formatter>. Le format par défaut génèrera un numéro de version
+différent chaque jour, de telle façon que vous n'avez pas besoin de vous soucier d'autre chose
+si vous ne faîtes pas plusieurs livraisons par jour. Vous ajoutez simplement
+C<< [AutoVersion] >> à votre F<dist.ini> et vous obtiendrez un numéro de version tel que "0.101230"
+
+Si vous avez besoin d'une livraison supplémentaire, vous pouvez simplement configurer
+la variable d'environnement I<N> pour augmenter le dernier chiffre. Cette commande
+vous donnera la version "0.101235":
+
+  $ N=5 dzil release
+
+Si vous voulez changer le numéro de tête, vous pouvez fournir un paramètre C<major> et si
+vous voulez en même temps un format différent, vous pouvez fournir votre propre
+chaîne de format. Par exemple, vous pourriez (mais, par pitié ne le faîtes pas !) des versions
+basées sur un horodatage à la seconde avec :
+if you want a different format altogether, you can supply your own format
+string.  For example, you could (but please don't!) get one-second resolution
+timestamp based versions with:
+
+  #!vim dosini
+  [AutoVersion]
+  format = {{ cldr('yyyyMMdd') }}.{{ cldr('HHmmss') }}
+
+=head2 Numérotation de version depuis un module
+
+Les builds traditionnels basés sur F<Makefile.PL> et F<Build.PL> récupère le numéro
+de version de la distribution via l'instruction C<$VERSION> dans
+le module principal de la distribution. Dans Dist::Zilla, ce module est nommé par
+le paramètre de configuration C<main_module> - ou, plus souvent, c'est le module
+dont le nom correspond au nom de votre distribution. Si vous voulez obtenir la version
+de votre distribution à partir de votre module principa, vous pouvez simplement utiliser
+L<VersionFromModule|Dist::Zilla::Plugin::VersionFromModule>.
+
+=head2 Numérotation de version à partir de Git
+
+Vous pouvez également éviter les versions basées sur l'horodatage en démarrant avec
+votre dernière version et en l'incrémentant. 
+L<Git::NextVersion|Dist::Zilla::Plugin::Git::NextVersion> effectue cela. Il commence
+par chercher les étiquettes de type version (en utilisant une expression rationnelle
+configurée par le paramètre C<version_regexp>), trouve la version tagguée la plus
+grande puis fixe la version courante de build à la version suivante,
+calculée avec L<Version::Next>. Quand vous livrez votre distribution, supposant que
+vous utilisez le plugin Git::Tag, votre livraison sera automatiquement marquée et 
+Git::NextVersion fera la chose appropriée de nouveau lors de votre prochain build.
+
+=for cyoa
+? vcs          ? apprendre comment intégrer dzil (et la gestion de version) avec votre VCS
+? release      ? apprendre comment livrer votre distribution sur CPAN

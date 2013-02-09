@@ -1,0 +1,14 @@
+
+=head1 Commencez ici !
+
+Dist::Zilla est pensé pour faciliter la livraison de votre logiciel libre sur
+CPAN. Comme L<ExtUtils::MakeMaker> ou L<Module::Build>, il prend votre code source
+et construit une archive tar qui peut être installée par d'autres utilisateurs. A la
+différence de ces outils, toutefois, Dist::Zilla s'occupe de toutes sortes de tâches
+ennuyeuses et sans intérêt pour que vous, le programmeur, soyez libre de simplement
+écrire votre code.
+
+=for cyoa
+? cpan-dists   ? apprenez davantage sur la façon dont les distributions CPAN fonctionnent
+? new-dist     ? écrivez une nouvelle distribution en utilisant Dist::Zilla
+? convert-dist ? migrez une distribution existante vers Dist::Zilla
