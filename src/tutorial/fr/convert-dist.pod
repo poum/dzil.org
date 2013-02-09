@@ -1,0 +1,228 @@
+
+=head1 Migrer une distribution existante vers Dist::Zilla
+
+=for html <blockquote>
+
+Cette page de tutoriel est adaptée de l'article Perl Pub L<More Code, Less
+Cruft: Managing Distributions with
+Dist::Zilla|http://www.perl.org/pub/2010/03/more-code-less-cruft-managing-distributions-with-distzilla.html>
+
+=for html </blockquote>
+
+Basculer votre ancien code pour utiliser Dist::Dilla est facile et vous pouvez soit
+rester conservateur, soit être jusqu'au bout-iste. Nous allons suivre le processus de conversion
+d'une de mes distributions, F<Number::Nary>.  Pour suivre, clonez L<son dépôt git
+|http://github.com/rjbs/number-nary/> et débutez avec le commit 
+tagué C<pre-dzil>. Si vous ne voulez pas utiliser C<git>, pas de problème.  Vous pourrez 
+quand même être capable de voir ce qui se passe.
+
+=head3 Remplacer Makefile.PL
+
+La première chose que nous allons remplacer est F<Makefile.PL>, le programme traditionnel pour 
+construire et installer des distributions (ou "dists").  Si vous partez d'une distribution basée sur 
+L<Module::Build>, nous remplacerons F<Build.PL> à la place.
+Dist::Zilla construira ces fichiers pour vous dans la distribution que vous menez
+de façon à ce que les utilisateurs qui l'installe les aient à disposition, mais vous n'aurez 
+jamais plus à vous en soucier.
+
+Number::Nary a été packagé avec L<Module::Install>, la bibliothèque qui m'a inspiré 
+pour élaborer Dist::Zilla.  Son F<Makefile.PL> ressemblait à ceci :
+
+  #!perl
+  use inc::Module::Install;
+  all_from('lib/Number/Nary.pm');
+  requires('Carp'            => 0);
+  requires('List::MoreUtils' => 0.09);
+  requires('Sub::Exporter'   => 0.90);
+  requires('UDCode'          => 0);
+  auto_manifest;
+  extra_tests;
+  WriteAll;
+
+Si c'est ExtUtils::MakeMaker qui avait été utilisé, il pourrait ressembler à quelque chose comme 
+ceci :
+
+  #!perl
+  use ExtUtils::MakeMaker;
+
+  WriteMakefile(
+    NAME      => 'Number::Nary',
+    DISTNAME  => 'Number-Nary',
+    AUTHOR    => 'Ricardo Signes <rjbs@cpan.org>',
+    ABSTRACT  => 'encode and decode numbers as n-ary strings',
+    VERSION   => '0.108',
+    LICENSE   => 'perl',
+    PREREQ_PM => {
+      'Carp'                => 0
+      'List::MoreUtils'     => '0.09',
+      'Sub::Exporter'       => 0,
+      'UDCode'              => 0,
+    }
+  );
+
+Nous pouvons simplement supprimer ce fichier et le remplacer par un fichier F<dist.ini>, ressemblant
+à ceci :
+
+  #!vim dosini
+  name    = Number-Nary
+  version = 0.108
+  author  = Ricardo Signes <rjbs@cpan.org>
+  license = Perl_5
+  copyright_holder = Ricardo Signes
+
+  [GatherDir]
+  [MetaYAML]
+  [MakeMaker]
+  [Manifest]
+
+  [Prereqs]
+  Carp            = 0
+  List::MoreUtils = 0.09
+  Sub::Exporter   = 0.90
+  UDCode          = 0
+
+A ce stade, nous avons plus de lignes qu'avant, mais ne vous inquiétez pas - cela ne durera pas longtemps.
+
+La majeure partie se comprend d'emblée, sauf ce qui concerne le groupe de noms entourés 
+de crochets. Chacun configure un autre plugin et chaque plugin apporte de l'aide
+pour une partie spécifique du processus bien défini de construction de votre distribution.
+Ceux ci-dessus configurent le minimum requis pour remplacer F<Makefile.PL>: ils récupèrent 
+tous les fichiers de votre extraction et lorsque vous contruisez la distribution, ils ajoutent les
+fichiers supplémentaires dont vous avez besoin pour la livrer.
+
+A ce point, si vous voulez simplement construire une archive tar à livrer, 
+vous pouver exécuter C<dzil build> (au lieu de C<< perl Makefile.PL && make dist >>) et 
+livrer le fichier résultat. Mais vous vouliez voir ce qu'on pouvait gagner, nous y arrivons... 
+
+=head3 Eliminer les fichiers de paquetage sans intérêt 
+
+Le fichier F<MANIFEST.SKIP> indique aux autres outils de packaging quels sont les fichiers à exclure.
+Vous pouvez continuer à l'utiliser (en utilisant le plugin ManifestSkip) mais vous pouvez presque toujours
+supprimer ce fichier et utiliser le fichier PruneCruft. Il écarte tous les fichiers que les gens mettent
+habituellement dans leur fichier 
+
+La communauté CPAN suit la tradition de livrer des tas de bonnes documentations écrites en Pod.
+Malgré cela, nombre d'outils attende un fichier README en pur format texte.
+Le plugin Readme en générera un pour vous.
+
+Les distributeurs finaux (comme les distributions Linux) aiment voir très clairement
+les instructions de licence, spécialement sous la forme d'un fichier F<LICENSE>. Comme
+votre F<dist.ini> a connaissance des détails de votre licence, il peut générer 
+ce fichier pour vous.
+
+Donc nous avons supprimé entièrement trois fichiers - F<MANIFEST.SKIP>, F<LICENSE> et
+F<README> - et ajouté exactement ce qui suit à votre configuration :
+
+  #!vim dosini
+  [PruneCruft]
+  [License]
+  [Readme]
+
+Pas mal, spécialement si vous vous souvenez que désormais, quand vous modifiez
+la version, la licence ou le résumé, il est garanti que ces fichiers contiendront
+les données à jour.
+
+=head3 Stock Tests
+
+Il existe aujourd'hui un paquet de tests que les gens attendent que les auteurs CPAN 
+exécutent avant de livrer. Number::Nary en possède trois :
+
+  xt/release/perl-critic.t
+  xt/release/pod-coverage.t
+  xt/release/pod-syntax.t
+
+Ils sont dans le répertoire F<./xt/release> pour indiquer qu'ils ne doivent être exécutés 
+qu'au moment de tester une nouvelle version candidate à la livraison, et pas à chaque
+fois qu'un utilisateur l'installe.
+
+Ces fichiers sont plutôt simples, mais la dernière chose que vous voulez est 
+de vous apercevoir que vous en avez copié collé une version légèrement buguée.
+Au lieu de cela, vous pouvez simplement générer ces fichiers au besoin et s'il
+y a un bug, vous corrigez le plugin et à la reconstruction suivante, tout le monde 
+reçoit le correctif. Une fois encore, vous pouvez supprimer ces trous fichiers et
+utiliser à la place ces trois plugins :
+
+  #!vim dosini
+  [ExtraTests]
+  [Test::Perl::Critic]
+  [PodCoverageTests]
+  [PodSyntaxTests]
+
+Les plugins de test Test::Perl::Critic et Pod ajoutent des fichiers de test à votre répertoire F<./xt> 
+tandis que ExtraTests les réécrit pour les ramener à la vie dans F<./t>, mais seulement dans les 
+circonstances appropriées, comme lors des tests de livraison.
+
+Si vous avez personnalisé vos tests de couverture Pod pour considérer certaines méthodes comme 
+dignes de confiance bien qu'elles n'aient pas de documentation, vous pouvez déplacer cette
+configuration dans votre Pod lui-même en ajoutant une ligne telle que celle-ci :
+
+  #!vim pod
+  =for Pod::Coverage some_method some_other_method this_is_covered_too
+
+Le plugin Test::Perl::Critic, n'est pas fourni avec Dist::Zilla. C'est un plugin
+tiers. Il y a un paquet de plugins de ce type sur CPAN et il est facile de les installer.
+C<< [Test::Perl::Critic] >> indique à Dist::Zilla de charger 
+Dist::Zilla::Plugin::Test::Perl::Critic. Installer-le simplement avec F<cpan> ou votre gestionnaire
+de paquets et vous êtes prêt à utiliser le plugin.
+
+=head3 L'ensemble @Basic l'aide à la livraison
+
+Puisque la plupart du temps vous voudrez utiliser la même configuration partout,
+Dist::Zilla facilite sa réutilisation. Nous allons utiliser quelque chose de proche
+de l'ensemble de plugins "Basic" fourni avec Dist::Zilla. Nous pourrions remplacer 
+la totalité de la configuration de plugin (à l'exception des Prereqs - les pré-requis) 
+avec ceci :
+
+  #!vim dosini
+  [@Basic]
+
+  [PodSyntaxTests]
+  [PodCoverageTests]
+  [CriticTests]
+
+... si bien que nous retrouvons finalement un agréable et petit fichier de configuration.
+
+Classic nous amène également quelques autres plugins, mais, pour la plupart, il n'est pas intéressant
+de les mentionner maintenant. L'un d'eux, toutefois, est UploadToCPAN. Il offre
+la commande C<dzil release> qui vous permet de L<livrer votre distribution sur 
+CPAN|@release> facilement.
+
+=head3 Laisser Dist::Zilla modifier vos modules
+
+Jusqu'à maintenant, nous avons seulement laissé Dist::Zilla construire des fichiers
+supplémentaires comme les fichiers de test et de packaging. Vous pouvez obtenir 
+davantage de Dist::Zilla si vous le laissez également tripoter les fichiers
+de votre bibliothèque.
+
+Par example, nous pourrions ajouter les plugins PkgVersion et PodVersion
+pour laisser Dist::Zilla s'occuper d'ajuster la version dans toutes vos
+bibliothèques. Ils trouvent les fichiers F<.pm> et ajoutent une déclaration C<< our $VERSION = ... >>
+et une section C<< =head1 VERSION >>  au Pod - ce qui signifie que nous pouvons
+supprimer tout ceci de notre code et de désormais plus nous occuper de les tenir à jour.
+
+Une autre chose pour laquelle Dist::Zilla peut nous aider est de gérer nos
+pré-requis. En ce moment, notre dist.ini contient une longue liste de pré-requis,
+tout comme notre ancien Makefile.PL le faisait :
+
+  [Prereqs]
+  Carp            = 0
+  List::MoreUtils = 0.09
+  Sub::Exporter   = 0.90
+  UDCode          = 0
+
+Nous pouvons nous passer de cela avec AutoPrereqs qui va analyser notre code
+pour trouver toutes les bibliothèques dont nous avons besoin ainsi que les versions nécessaires.
+Nous avons juste à enlver Prereqs et ajouter AutoPrereqs. (Dans cet exemple, ça fonctionne,
+mais AutoPrereqs peut ne pas trouver certaines formes inusuelles de dépendance. Au moment
+de convertir votre propre distribution, envisagez une contre-vérification).
+
+Dist::Zilla peut également fournir automatiquement des sections de Pod passe-partout telles que
+C<NAME>, C<AUTHOR> ou C<COPYRIGHT>.
+
+=for cyoa
+? prereq       ? apprendre comment déclarer ou détecter des pré-requis
+? versioning   ? apprendre comment gérer les numéros de version avec Dist::Zilla
+? writing-docs ? apprendre comment de débarasser des documentations passe-partout avec Dist::Zilla
+? testing      ? apprendre comment tester votre distribution
+? release      ? apprendre comment livrer votre distribution sur CPAN
+? vcs          ? apprendre comment intégrer Dist::Zilla avec votre système de contrôle de version 

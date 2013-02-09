@@ -1,0 +1,104 @@
+
+=head1 Déclarer et détecter les pré-requis
+
+Les clients CPAN qui seront utilisés pour installer votre distribution regarderont
+d'abord ses fichiers F<META.yml> ou F<META.json> ou interagiront avec son outil
+d'installation pour déterminer quelles bibliothèques, s'il y en a, doivent être
+installées avant que votre code puisse être construit, testé et installé. Ce sont les
+I<prereqs> (I<pré-requis>) de votre distribution.
+
+Il existe deux moyens habituels de configurer vos pré-requis. Vous pouvez les 
+déclarer explicitement ou vous pouvez laisser Dist::Zilla les détecter en 
+analysant votre code.
+
+=head2 Déclarer vos pré-requis
+
+Le plugin Prereqs est aussi simple qu'il y paraît :
+
+  #!vim dosini
+  [Prereqs]
+  Sub::Exporter     = 0.979 ; to get INIT arg
+  Acme::ProgressBar = 1.002 ; includes needed bug fixes
+
+Si vous avez besoin de déclarer un type particulier de pré-requis, comme, par exemple,
+des pré-requis qui ne sont nécessaires que pour tester votre distribution, vous pouvez
+ajouter l'une des sections de configuration suivantes de l'exemple suivant - elles ont
+le même effet.
+
+  #!vim dosini
+  [Prereqs]
+  -phase = test
+
+  Test::BinaryData = 0
+  Test::More       = 0.88 ; for done_testing
+
+X<>
+
+  #!vim dosini
+  [Prereqs / TestRequires]
+  Test::BinaryData = 0
+  Test::More       = 0.88 ; for done_testing
+
+Comme vous ne pouvez pas avoir deux sections de même nom, le second exemple
+sera probablement plus simple à utiliser partout.
+
+En général, les seuls plugins de pré-requis dont vous aurez besoin sont 
+RuntimeRequires (celui par défaut), TestRequires, ConfigureRequires et BuildRequires. Pour
+plus d'information sur eux, consultez le fichier de spécification META de CPAN.
+
+=head2 Détecter vos pré-requis
+
+Le problème quand vous maintenez votre liste de pré-requis dans votre F<dist.ini> est
+le même que celui posé en la maintenant dans votre F<Makefile.PL> : les versions demandées
+dans votre code et votre configuration divergent. La manisfestation la plus courante
+de ce phénomène et d'avoir plein de lignes brutes C<use Some::Module> dans votre code, mais des versions
+spécifiques dans votre installateur.
+
+Dist::Zilla résoud ce problème en extrayant vos pré-requis de votre code.
+Vous indiquez la version dans votre instruction C<use> et Dist::Zilla demandera
+cette version. Tout ce que vous avez à ajouter à votre configuration est :
+
+  #!vim dosini
+  [AutoPrereqs]
+
+il va chercher toutes les instructions C<use> et C<require> dans votre code,
+ainsi que certains cas spéciaux pour L<Moose>. Les instructions trouvées
+pour le code qui est sur le point d'être installé (comme les programmes
+et les bibliothèques) sont transformés en pré-requis à l'exécution. Les
+instructions trouvées pour les bibliothèques de test deviennent des pré-requis
+de test.
+
+Pour indiquer des versions I<particulières> d'un pré-requis, vous devez
+utiliser la forme C<< use MODULE VERSION >> ce qui est en fait une I<très bonne> chose
+car cela signifie que vous ne pourrez désormais pus compiler votre code si vos
+pré-requis ne sont pas présents. Cela maintient synchronisés votre code et vos
+données d'installation. Par exemple :
+
+  use Moose 1.00;
+  use JSON 2 (); # don't import any functions
+
+(A ce point, vous voudrez probablement vous assurer que vous demandez la version
+appropriée dans votre code. De nombreuses distribution réclament une version dans 
+le code et une autre dans la liste des pré-requis. Maintenant que vous n'avez qu'un
+seul endroit pour lister les versions requises, assurez-vous d'avoir la bonne.)
+
+Si AutoPrereqs fait des erreurs, vous pouvez toujours lui dire de sauter des choses
+ou ajouter des choses manuellement avec Prereqs :
+
+  #!vim dosini
+  [AutoPrereqs]
+  skip = ^Bibliothèque::Bugguée$
+  skip = ^Bundled::
+
+  [Prereqs]
+  Quelque::Chose::Manqué::Par::AutoPrereqs::Misses = 1.234
+
+=head2 Déclarer les pré-requis pour l'auteur
+
+Parfois les pré-requis pour l'auteur (les modules utilisés par Dist::Zilla) sont
+indirectement nécessaires, par exemple via une configuration de Pod::Weaver. Vous pouvez
+les déclarer dans F<dist.ini> par
+
+  #!vim dosini
+  ; authordep Pod::Weaver::Plugin::StopWords
+  ; authordep Pod::Weaver::Section::Support

@@ -1,0 +1,30 @@
+
+=head1 Réaliser la configuration initiale de Dist::Zilla 
+
+Vous pouvez faire un tas de choses dans jamais configurer Dist::Zilla mais
+créer un fichier de configuration utilisateur dès le départ peut vous faire
+gagner du temps ensuite. Ce fichier sera localisé en 
+F<~/.dzil/config.ini> et gardera en réserve des informations qui seront utilisées
+pour obtenir les valeurs par défaut pour des choses comme votre nom d'utilisateur, votre
+licence préférée, etc.
+
+Dist::Zilla peut générer ce fichier pour vous, si vous exécutez C<dzil setup>.  Si
+vous préférez faire les choses à l'ancienne manière, voici un exemple de 
+C<config.ini> qui fera l'affaire pour être copié, collé et modifié:
+
+  #!vim dosini
+  [%User]
+  name  = E. Xavier Ample
+  email = cpan@example.com
+
+  [%Rights]
+  license_class    = Perl_5
+  copyright_holder = E. Xavier Ample
+
+  [%PAUSE]
+  username = EXEMPLE
+  password = cakesandale
+
+=for cyoa
+? new-dist     ? écrire une nouvelle distribution en utilisant Dist::Zilla
+? convert-dist ? migrer une distribution existante vers Dist::Zilla
