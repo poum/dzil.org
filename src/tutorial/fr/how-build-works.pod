@@ -1,0 +1,92 @@
+
+=head1 Comment Dist::Zilla construit votre distribution
+
+Un objet Dist::Zilla représente votre distribution et fournit des méthodes qui
+implémente des commandes C<dzil> telles que C<release> et C<test>. La plus
+importante de ces méthodes, cependant, c'est C<build>. Elle signifie d'utiliser
+tous les éléments de configuration et les entrées et de produire une archive
+utilisable pour une livraison. Presque tout ce travail est réalisé via ses
+plugins bien qu'une partie du travail soit laissé pour la glue codée en dur
+qui lie les plugins entre eux.
+
+La construction se déroule en phases. Par exemple, d'abord, les fichiers sont
+collectés dans une grande pile puis certains sont retirés, d'autres sont réécrits;
+d'autres choses sont réalisées puis, finalement, les fichiers sont tous écrit
+dans le répertoire de destination. Chaque travail de phase est exécuté par des
+plugins qui exécute le rôle (tel que le rôle L<Moose>) associé avec la phase.
+Ainsi, si vous voulez écrire un plugin qui ajoute des fichiers lors de la phase
+de collecte des fichiers, vous devez écrire une classe qui C<tient> le rôle
+C<Dist::Zilla::Role::FileGatherer>. Il est important de réaliser qu'un
+unique plugin peut exécuter plusieurs de ces rôles. Quand plus d'un plugin
+peut réaliser un travail dans une phase donnée, les plugins sont exécutés dans
+l'ordre dans lequel ils sont listés dans la configuration. 
+
+I<Apprendre les phases de construction et les plugins associés est la clef
+pour utiliser efficacement Dist::Zilla.>
+
+Voici une liste de ces phases, suivie d'une brève description de certain des
+plus communément utilisés :
+
+=for :list
+* l'initialisation pré-construction est réalisée par les plugin BeforeBuild
+* les fichiers sont ajoutés à la distribution par les plufins FileGatherer
+* les fichiers sont supprimés de la distribution par les plugins FilePruner
+* le contenu des fichiers est modifié par les plugins FileMunger
+* les pré-requis de la distribution sont enregistrés par les plugins à PrereqSource
+* le meta contenu de la distribution (F<META.json>) sont apportés par les plugins MetaProvider
+* chaque installateur (tel que F<Makefile.PL>) est configuré par un plugin InstallTool
+* la distribution est écrite sur le disque
+* les activités post-construction sont réalisées par les plugins AfterBuild
+
+D'autres parties du comportement de Dist::Zilla sont gérés par cette même sorte
+de configuration en phases et plugins. Ce sont les plugins BeforeRelease, Releaser et 
+et AfterRelease, les plugins BuildRunner et TestRunner, les plugins VersionProvider ainsi
+que d'autres. Voyez la liste plus complète des modules dans l'espace de nommage 
+C<Dist::Zilla::Role::>.
+
+=head2 Rôles de phase courants
+
+=head2 FileGatherer
+
+Plugins performing the L<FileGatherer|Dist::Zilla::Role::FileGatherer> role
+have their C<gather_files> methods called early on in the build process, and
+they're expected to inject files into the distributions in-memory file listing.
+Plugins that add files to the distribution are pretty common, and they're easy
+to implement.  For example, the plugins that generate the F<LICENSE> and
+F<README> files are simple FileGatherer plugins.
+
+A very easy to forget FileGatherer is GatherDir, which adds all the files in a
+given directory.  This plugin is usually used to add the contents of your
+working directory, so if you don't use it, I<you won't have any of your on-disk
+files in your dist>.
+
+=head2 FilePruner
+
+Les plugins L<FilePruner|Dist::Zilla::Role::FilePruner> suppriment les fichiers
+qui viennent juste d'être ajoutés par les plugins FileGatherer. Il y a le plugin
+ManifestSkip lit un fichier standard F<MANIFEST.SKIP> pour trouver des choses
+à suprrimer, et il y a PruneCruft qui supprime les fichiers probablement
+inutiles tels que dotdirs, les outils de construction, les anciennes constructions
+et d'autres éléments.
+
+=head2 FileMunger
+
+Les plugins L<FileMunger|Dist::Zilla::Role::FileMunger> cherche des fichiers 
+existant à l'aide de leurs noms et de leurs contenus. Un FileMunger est le plugin
+PodWeaver qui utilise L<Pod::Weaver> pour réécrire la documentation de votre
+code source; et NextRelease qui met à jour votre fichier des modifications 
+pour avoir la bonne version puisque vous ne pouvez pas le savoir avant de lancer la 
+construction.
+
+Les plugins FileMunger peuvent être incroyablement utiles mais ils doivent
+être utilisés très précautionneusement. Il est facile de casser votre code source
+ou provoquer d'autres erreurs bizarres en modifiant trop imprudemment.
+
+=head2 AfterRelease
+
+Les plugins AfterRelease n'ont pas de but particulier. Leur intérêt principal est 
+qu'ils exécutent du code après une livraison de votre distribution couronnée de succès. 
+Ceci les rend réellement utiles pour L<l'intégration au contrôle de version|@vcs>, l'installation en local,
+l'envoi d'une annonce de livraison ou n'importe quoi d'autre que vous voudrez faire
+après la livraison.
+
