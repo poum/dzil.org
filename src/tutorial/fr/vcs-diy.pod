@@ -1,0 +1,36 @@
+
+=head1 Ecrire l'intégration de Dist::Zilla pour votre VCS
+
+Dist::Zilla n'utilise aucun type de middleware de VCS tel que L<VCI>. Chaque plugin
+d'intégration de VCS est autonome. Le framework qui I<est> disponible est l'ensemble
+standard des rôles Dist:Zilla pour les plugins. Avant d'écrire vos propres plugins
+d'intégration de VCS, vous devez comprendre L<comment fonctionne le processus de 
+construction|@how-build-works> afin de savoir quel rôle utiliser pour obtenir
+le comportement que vous souhaitez.
+
+Voici quelques astuces sur ce que vous voulez vraisemblablement.
+
+Si vous voulez être sûr que tout est enrôlé (checked in) et abandonner si
+ce n'est pas le cas, vous devez le faire avant de livrer (car la livraison
+ne peut habituellement pas être annulée), donc vous devez écrire un plugin
+BeforeRelease.
+
+Presque tout le reste que vous voudrez faire appartient à AfterRelease :
+vous voudrez probablement soumetttre toutes les modifications faites durant
+le processus de livraison (comme augmenter les conteneurs "suivant" dans le 
+fichier des modifications via NextRelease); vous pourriez vouloir marquer les
+livraisons afin de retrouver ultérieurement les soumissions (commit) concernées;
+vous pourriez vouloir publier vos modifications vers un endroit public si
+vous utilisez un VCS distribué. Toutes ces choses doivent se produire après
+que vous avez livré avec succès, donc vous utiliserez un rôle AfterRelease.
+
+Comme vous pourriez ajouter beaucoup de comportement dans AfterRelease, assurez-vous
+de les ordonner correctement ! Soumettre des fichiers modifiés ne vous sera d'aucune aide
+si vous modifiez ces fichiers I<après> les avoir soumis. Une étiquette de livraison 
+nouvellement créée ne sera pas visible si elle est faite après avoir poussé les fichiers
+vers votre dépôt public. Suivez l'ordre de votre plugin !
+
+=for cyoa
+? how-build-works ? apprendre comment le processus de construction de Dist::Zilla fonctionne
+? versioning      ? apprendre comment gérer votre numéro de version avec Dist::Zilla
+

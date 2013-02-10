@@ -1,0 +1,172 @@
+=head1 Personnaliser le processus de fabrication
+
+Dist::Zilla vous permet de créer autant de "profils de fabrication" que
+nécessaire pour créer des distributions avec différents contenus par défaut.
+Vous pourriez en avoir un pour le travail et un pour votre code personnel;
+un pour le code orienté objetet un pour le code fonctionnel; ou un pour les applications
+web et un pour les applications en ligne de commande, etc.
+
+=head2 Préparation
+
+Pour exécuter ce qui suit, vous devez :
+
+=for :list
+* installer L<Dist::Zilla>, version 4.101780 ou supérieure
+* exécuter C<L<dzil setup|@initial-setup>>
+
+Le reste de ce document suppose que vous n'avez pas encore fait de profil
+de fabrication personnalisé, ce qui signifie qu'il n'y a rien dans 
+F<~/.dzil/profiles>. Si vous avez un profil par défaut, renommez le simplement
+si vous voulez suivre exactement les étapes décrites ci-après.
+
+=head2 Créer un profil par défaut
+
+Créez un répertoire appelé F<~/.dzil/profiles/default>. Il contiendra
+votre profil de fabrication par défaut, remplaçant le profil par défaut très
+simple qui est fourni avec Dist::Zilla.
+
+La première chose que vous voudrez faire est d'aller dans ce répertoire et 
+de créer un fichier F<profile.ini>. Ce fichier récupère et configure le
+plugin qui participe à la fabrication de nouvelles distributions. Pour le moment,
+renseignez le fichier avec le contenu suivant :
+
+  #!vim dosini
+  [TemplateModule/:DefaultModuleMaker]
+  template = Module.pm
+
+  [DistINI]
+  append_file = plugins.ini
+
+  [GatherDir::Template]
+  root = skel
+
+Le fichier F<profile.ini> définit deux composant pour fabriquer votre 
+nouvelle distribution. Le premier, TemplateModule, reçoit le nom spécial
+C<:DefaultModuleMaker> qui indique à Dist::Zilla que ce composant sera 
+utilisé pour créer le fichier du nouveau module. Le paramètre C<template>
+lui indique un fichier à utiliser, donc créez un fichier F<Module.pm> (dans le même 
+répertoire que F<profile.ini>) avec le contenu suivant :
+
+  use strict;
+  use warnings;
+  package {{$name}};
+
+  1;
+
+Le deuxième composant dans F<profile.ini> est DistINI qui indique
+de construire un fichier F<dist.ini> basé sur votre L<configuration initiale|@initial-setup> plus
+le contenu de F<plugins.ini>.  C'est là
+où vous mettrez tous les plugins spéciaux que vous voulez.
+
+Nous allons créer un C<plugins.ini> et y mettre votre configuration par défaut préférée,
+qui pourrait ressembler à ce qui suit :
+
+  #!vim dosini
+  [@Basic]
+  [NextRelease]
+  [@Git]
+
+Le troisième composant dans votre F<profile.ini> était GatherDir::Template qui 
+indique un répertoire de patrons qui seront également créés dans votre nouvelle
+distribution. Nous pourrions mettre là des patrons qui seraient transformés en fichiers
+dans notre nouvelle distribution.
+
+Créez simplement F<~/.dzil/profiles/default/skel>, allez dans ce répertoire et ajoutez 
+des fichiers patron Text::Template.
+
+Au lieu d'utiliser ceci comme fichier de démarrage F<Changes>, nous allons plutôt utiliser 
+le plugin GenerateFile qui nous permet d'indiquer le contenu du fichier directement dans notre
+F<profile.ini>.  Nous ajouterons ceci au profil :
+
+  #!vim dosini
+  [GenerateFile / Generate-Changes ]
+  filename    = Changes
+  is_template = 0
+  content = Historique de modification pour {{$dist->name}}
+  content =
+  content = {{$NEXT}}
+
+Retournez dans votre répertoire de travail et exécutez C<dzil new My::Module>.  Vous devriez obtenir
+une nouvelle distribution qui est presque exactement la même que celle originellement par défaut fournie
+avec Dist::Zilla, excepté l'ajout des plugins souhaités dans notre 
+F<dist.ini> et d'un fichier F<Changes>.
+
+Maintenant, tout ce que nous avons à faire est de personnaliser les fichiers F<plugins.ini> et F<Module.pm>
+dans le profil de fabrication pour l'adapter à notre propre style.
+
+=head2 Configurer un profil de fabrication alternatif
+
+La façon la plus simple de configurer un profil alternatif est de copier votre
+profil par défaut dans un nouveau répertoire. Par exemple, si vous voulez 
+configurer un profil qui fournit un module de démarrage spécifique pour Moose,
+vous pourriez créer une copie comme ceci :
+
+  $ cp -a ~/.dzil/profiles/default ~/.dzil/profiles/moose
+
+Ensuite, personnalisez le fichier F<~/.dzil/profiles/moose/Module.pm> pour
+charger Moose et founir tout le code passe-partout que vous souhaitez.
+
+Vous pouvez exécuter C<dzil new> avec le commutateur C<-p> pour utiliser un profil alternatif :
+
+  $ dzil new -p moose Mon::Moose::Module
+
+=head2 Distribuer votre profil
+
+Peut-être souhaitez-vous pouvoir installer votre profil de fabrication avec
+votre ensemble de plugins. Peut-être, plus utilement, vous dirigez un projet (ou
+un département) qui a besoin d'avoir des réglages cohérents pour toutes les nouvelles
+distributions. Dans ces cas, mettre un profil dans votre répertoire personnel n'est
+pas suffisant. Vous voulez quelque chose qui puisse être partagé par plusieurs utilisateurs.
+C'est facile : vous pouvez inclure votre profil dans une distribution pour qu'il soit installé.
+
+There are lots of ways to do this, and you can accomplish lots of interesting
+things with minting profiles, but the simplest way is I<very> simple, and will
+work for just about everything.
+
+D'abord, faire une nouvelle distribution contenant un module appelé
+Dist::Zilla::MintingProfile::I<NomDuFournisseurIci> - en replaçant NomDuFournisseurIci
+avec un nom pour votre fournisseur (provider). Un provider est un module qui peut
+fournir des profils de fabrication. Ici, il ne s'agit que d'un emplacement dans un répertoire
+partagé File::ShareDir, donc cela ne requiert que peu de code. Cela doit ressembler à :
+
+  #!perl
+  package Dist::Zilla::MintingProfile::ProviderNameHere;
+
+  use Moose;
+  with 'Dist::Zilla::Role::MintingProfile::ShareDir';
+
+Le rôle MintingProfile::ShareDir signifie que le profil essaiera de chercher dans le répertoire
+partagé du module le F<profile.ini> du profil et les autres fichiers. Pour les avoir dans ce répertoire partagé
+vous devrez utiliser ModuleShareDirs dans votre F<dist.ini>:
+
+  #!vim dosini
+  [ModuleShareDirs]
+  Dist::Zilla::MintingProfile::NomDuFournisseurIci = profiles
+
+Ceci signifie "les fichiers dans le répertoire F<./profiles> de ma distribution seront installés dans 
+le répertoire partagé de ce module." Il est I<critique> que vous utilisiez ici
+B<Module>ShareDirs et pas simplement ShareDirs.
+
+Notez que nous avons appelé le répertoire F<profileB<s>>. C'est
+parce que vous pouvez avoir plusieurs profils pour ce seul module. Comme pour
+les profils de votre répertoire personnel, le profil par défaut se trouve dans
+F<default>. Créez le répertoire F<./profiles/default> dans votre distribution et mettez-y votre F<profile.ini>
+et les autres fichiers.Si vous voulez faire d'autres profils, mettez-les dans d'autres
+sous-répertoires. Maintenant, quand vous installez la distribution de profils de fabrication, vous pouvez utiliser
+ces profils. Au lieu de C<-p> qui prend un nom de profil alternatif, utilisez 
+C<-P> pour donner un fournisseur de profils alternatifs. Par exemple, vous pourriez
+exécuter :
+
+  $ dzil new -P NomFournisseurIci  Nouveau::Module
+
+Ou, pour ne pas avoir le profil par défaut de ce fournisseur :
+
+  $ dzil new -P NomFournisseurIci -p autreprofile Nouveau::Module
+
+=for cyoa
+? vcs-git      ? apprendre comment utiliser Dist::Zilla (y compris la fabrication) avec Git
+? prereq       ? apprendre comment déclarer des pré-requis
+? writing-docs ? apprendre comment Dist::Zilla vous aide à écrire de la documentation
+? testing      ? apprendre comment tester votre distribution
+? versioning   ? apprendre comment gérer les numéros de version avec Dist::Zilla
+? release      ? apprendre comment livrer votre distribution sur CPAN

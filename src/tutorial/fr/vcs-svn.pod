@@ -1,0 +1,17 @@
+
+=head1 Intégrer Dist::Zilla avec Subversion
+
+La prise en charge de Subversion par Dist::Zilla's est limitée et est offerte par le plugin additionnel
+L<Dist::Zilla::Plugin::Subversion>. En ajoutant C<[Subversion::Tag]> à votre 
+configuration, vous pouvez marquer les livraisons une fois qu'elles ont été faites.
+
+C'est un plugin additionnel Dist::Zilla que vous devrez installer séparemment de
+Dist::Zilla.
+
+La plupart des contributeurs de Dist::Zilla utilisent L<Git|http://git-scm.com/> et seront
+ravis si vous le faîtes aussi.
+
+=for cyoa
+? vcs-git ? intégrer Dist::Zilla avec Git
+? vcs-diy ? écrire une intégration à Dist::Zilla de votre propre VCS
+

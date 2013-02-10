@@ -1,0 +1,88 @@
+
+=head1 Contruire une distribution à partir de zéro
+
+Commencer à écrire une distribution avec Dist::Zilla est facile. Il fournit un
+système pour "fabriquer" de nouvelles distributions assez similaire à `h2xs`,
+L<Module::Starter> ou d'autres outils semblables. Mais contrairement à eux, 
+Dist::Zilla est I<extrêmement> configurable et peut être rendu capable
+de faire I<beaucoup plus> que simplement construire un ensemble de fichiers 
+que vous devrez modifier.
+
+=head2 Installer Dist::Zilla
+
+Pour faire ce qui suit, vous devrez :
+
+=for :list
+* installer L<Dist::Zilla>, version 4.102342 ou ultérieure
+* exécuter C<L<dzil setup|@initial-setup>>
+
+La suite de ce document suppose que vous n'avez pas fait de profil de 
+fabrication personnalisé, ce qui signifie que vous n'avez rien dans 
+F<~/.dzil/profiles>.  Si c'est le cas, et que les résultats observés ne correspondent
+pas à ce qui est décrit ci-dessous, vous devrez déplacer ce répertoire dans un
+autre endroit ou approfondir la question en lisant 
+L<how minting profiles work|@minting-profile>.
+
+=head2 Exécuter C<dzil new>
+
+C'est facile :
+
+  $ dzil new Votre::Bibliotheque
+  [DZ] making target dir ./Votre-Bibliotheque
+  [DZ] writing files to /Users/rjbs/tmp/Votre-Bibliotheque
+  [DZ] dist minted in ./Votre-Bibliotheque
+
+Si vous n'avez pas mis en place une configuration de fabrication spécifique, vous obtiendrez deux fichiers.
+
+F<./Votre-Bibliotheque/dist.ini>:
+
+  #!vim dosini
+  name    = Votre-Bibliotheque
+  author  = E. Xavier Emple <exemple@cpan.org>
+  license = Perl_5
+  copyright_holder = E. Xavier Emple <exemple@cpan.org>
+  copyright_year   = 2010
+
+  version = 0.001
+
+  [@Basic]
+
+F<./Votre-Bibliotheque/lib/Your/Library.pm>
+
+  #!perl
+  use strict;
+  use warnings;
+  package Your::Library;
+
+  1;
+
+Il n'y a pas beaucoup d'autres éléments passe-partout car la fabrique par défaut
+suppose que vous irez jusqu'au bout et que vous utiliserez un tas de plugins pour
+construire tout ce dont vous avez besoin. Notez qu'il n'I<ajoute> pour vous ces plugins
+dans votre F<dist.ini>. Les seuls plugins qu'il I<doit> ajouter sont ceux de
+L<Basic bundle|Dist::Zilla::PluginBundle::Basic> afin que les autres commandes C<dzil>
+fonctionnent. Vous devrez choisir vous même les autres plugins.
+
+Il est B<crucial> que vous compreniez ce que contient l'ensemble (bundle) "@Basic". C'est
+quasiment la configuration complète qui sera utilisée pour construire votre distribution.
+Si vous ajoutez plus de plugins qui entrent en conflit avec ceux de l'ensemble de base mais
+que vous n'avez aucune idée de ce que contient "@Basic", vous serez perdu.
+
+=head2 Ecrire un peu de code et quelques tests
+
+La difficulté reste la même qu'avec tout autre outil: faire le dur travail
+qui justifiera la livraison de la distribution. Dist::Zilla, malheureusement, n'écrira
+pas pour vous, ni le code, ni les tests associés.
+
+Vous devrez également écrire de la documentation, bien sûr, mais Dist::Zilla
+peut vous aider à rendre ceci moins pénible. Choisissez un ensemble de plugins
+adaptés, testez et livrez !
+
+=for cyoa
+? prereq       ? apprendre comment déclarer des pré-requis
+? writing-docs ? apprendre comment Dist::Zilla vous aide à écrire de la documentation
+? testing      ? apprendre comment tester votre distribution
+? versioning   ? apprendre comment gére les numéros de version avec Dist::Zilla
+? release      ? apprendre comment livrer votre distribution sur CPAN
+? minting-profile ? apprendre comment personnaliser le processus de fabrication
+? how-build-works ? apprendre ce qui concerne les plugins et les phases de construction de Dist::Zilla

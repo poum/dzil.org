@@ -1,0 +1,49 @@
+=head1 Livrer votre distribution
+
+Si vous livrez votre code sur CPAN, vous voudrez probablement ajouter ces trois plugins
+à votre configuration :
+
+  #!vim dosini
+  [TestRelease]
+  [ConfirmRelease]
+  [UploadToCPAN]
+
+Une fois ces plugins en place, la commande C<dzil release> :
+
+=for :list
+* L<contruira votre distribution|@how-build-works>
+* écrira une archive tar sur le disque
+* vérifiera qu'elle peut être extraite et testée avec succès
+* vous demandera une ultime confirmation
+* téléchargera la distribution sur PAUSE (le serveur de téléchargement des auteurs Perl)
+
+Pour permettre à Dist::Zilla de télécharger en votre nom, vous devrez ajouter un fichier
+F<~/.pause> contenant ceci :
+
+  user RJBS
+  password PeasAreDelicious
+
+Tout le reste fonctionnera directement !
+
+=head2 Livraison d'essai
+
+Normalement, lorsque vous exécutez C<dzil release>, la distribution téléchargée sur CPAN
+est prête à être indexée. Cela signifie qu'elle devient la source à jour, stable et indexée
+de tous les paquets qu'elle contient. Si quelqu'un essaie d'installer Votre::Bibliotheque,
+il commencera par récupérer celle que vous venez juste de livrer.
+
+Parfous, vous souhaitez télécharger une distribution sur CPAN qui pourra être trouvée
+et téléchargée par les gens intéressés (ou des testeurs automatisés vérifiant 
+au fil de l'eau). La solution est de faire une I<distribution d'essai>. Cette distribution
+ressemblera à toute autre distribution mais ne sera pas indexée par PAUSE et ne sera donc
+pas choisie automatiquement en tant que dernière version disponible par les clients de CPAN.
+
+Pour réaliser une distribution d'essai, exécutez simplement :
+
+  $ dzil release --trial
+
+=for cyoa
+? how-build-works ? apprendre comment Dist::Zilla construit votre distribution
+? testing         ? apprendre comment exécuter les tests de votre distribution
+? vcs             ? apprendre comment intégrer le processus de livraison avec votre VCS
+? versioning      ? apprendre ce qui concerne la gestion des numéros de version avec Dist::Zilla
