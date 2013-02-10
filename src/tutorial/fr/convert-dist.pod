@@ -139,7 +139,7 @@ Ces fichiers sont plutôt simples, mais la dernière chose que vous voulez est
 de vous apercevoir que vous en avez copié collé une version légèrement buguée.
 Au lieu de cela, vous pouvez simplement générer ces fichiers au besoin et s'il
 y a un bug, vous corrigez le plugin et à la reconstruction suivante, tout le monde 
-reçoit le correctif. Une fois encore, vous pouvez supprimer ces trous fichiers et
+reçoit le correctif. Une fois encore, vous pouvez supprimer ces trois fichiers et
 utiliser à la place ces trois plugins :
 
   #!vim dosini
