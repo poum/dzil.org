@@ -1,0 +1,98 @@
+
+=head1 Comment fonctionnent les distribution CPAN 
+
+Tout d'abord, reconnaissons qu'il existe plein de cas marginaux farfelus et 
+de choses étranges qui se produisent. C'est Perl, donc il y a plein de gens
+dingues qui font des choses démentes. Ce résumé n'est qu'un aperçu des cas
+les plus simples.
+
+Une distribution CPAN est une archive tar gzippée avec un nom de la forme
+
+  Nom-Distribution-1.234.tar.gz
+
+F<Nom-Distribution> est le nom de la distribution qui est habituellement juste le nom
+de son module le plus important avec le "C<::>" remplacé par un tiret. 
+"1.234" est le numéro de version. Une fois désarchivée, son contenu ressemblera à
+quelque chose comme ça :
+
+  Nom-Distribution-1.234/Changes
+  Nom-Distribution-1.234/LICENSE
+  Nom-Distribution-1.234/MANIFEST
+  Nom-Distribution-1.234/META.yml
+  Nom-Distribution-1.234/Makefile.PL
+  Nom-Distribution-1.234/README
+  Nom-Distribution-1.234/bin/dist-program
+  Nom-Distribution-1.234/lib/Distribution/Name.pm
+  Nom-Distribution-1.234/lib/Distribution/Name/Helper.pm
+  Nom-Distribution-1.234/t/00-compile.t
+  Nom-Distribution-1.234/t/blowfish-tests.t
+  Nom-Distribution-1.234/t/monkfish-tests.t
+  Nom-Distribution-1.234/t/octopode-tests.t
+  Nom-Distribution-1.234/xt/release/pod-syntax.t
+
+Certains de ces fichiers ont un rôle évident, comme le fichier F<LICENSE>, le fichier
+F<Changes> ou le F<README>. On les trouve partout dans les distributions logicielles.
+CPAN ne les impose pas mais ils aident les créateurs de paquetages
+(les gens qui empaquètent Perl pour les gestionnaires de paquetage niveau système d'exploitation, par exemple).
+D'autres fichiers sont le code à proprement parlé : les fichiers sous F<lib> sont les
+bibliothèques que vous livrez. Les fichiers sous F<bin> sont des exécutables à installer
+dans le C<$PATH> de l'utilisateur. Les fichiers dans F<t> et F<xt> sont des tests automatisés, exécutés
+avant de livrer ou avant d'installer la bibliothèque.
+
+Cela ne laisse que quelques fichiers liés à l'empaquetage CPAN à mentionner :
+
+=begin :list
+
+= F<MANIFEST>
+
+Ce fichier liste tous les fichiers de l'archive. Certains outils l'utilise
+pour vérifier le bon état de la distribution.
+
+= F<Makefile.PL> et/ou F<Build.PL>
+
+L'un ou les deux fichiers peuvent apparaître. Ce sont des programmes que l'utilisateur
+faisant l'installation exécute pour configurer, construire, tester et installer la distribution.
+Traditionnellement, ils sont également utilisés par le créateur de paquet de la distribution pour
+construire l'archive tar - mais avec Dist::Zilla ce ne sera plus le cas. Dist::Zilla remet en place
+ces fichiers pour empaqueter l'archive mais I<pas> pour l'installer.
+
+= F<META.yml> et/ou F<META.json>
+
+Ces fichiers décrivent la distribution de façon à ce que les installateurs, les 
+indexeurs et autres programmes puissent avoir une idée de ce que la distribution
+contient. Ils rapportent le nom de la distribution, sa version, ses auteurs et sa
+licence. Ils vous disent souvent quels paquets la distribution fournit, quels paquets
+doivent être présents pour qu'elle fonctionne et certaines autres méta données concernant
+la distribution.
+
+=end :list
+
+=head2 Quel aide apporte Dist::Zilla ?
+
+Quand on réalise un paquet avec les outils tradionnels de construction de distribution, 
+presque tous les fichiers contenus dans la distribution doivent avoir été gérés par
+l'auteur. L'auteur doit maintenir le manifeste, fournir le bon fichier de licence,
+mettre à jour les tests "embarqués" qu'il a fourni dans toutes ses distributions, et 
+ainsi de suite. Certains outils de construction peuvent prendre soin de certains d'entre eux,
+mais Dist::Zilla essaie de s'occuper de tous. Au lieu de pister tous les fichiers de la distribution
+dans votre dépôt, Dist::Zilla vous laisse vous concentrer sur ceux qui vous intéressent :
+
+  bin/dist-program
+  lib/Distribution/Name.pm
+  lib/Distribution/Name/Helper.pm
+  t/blowfish-tests.t
+  t/monkfish-tests.t
+  t/octopode-tests.t
+
+... ainsi que F<dist.ini> ou un autre fichier de configuration de Dist::Zilla.
+
+Quand vous êtes prêt à construire une distribution complète, vous exécutez
+C<dzil build> et Dist::Zilla passe par des mécanismes de construction, utilisant vos
+plugins pour ajouter les fichiers nécessaires (tels que F<LICENSE> et F<META.yml>) et pour ajouter
+les parties passe-partout aux fichiers existants (telles que les instructions de version et de copyright
+à vos fichiers de code).
+
+=for cyoa
+? new-dist     ? écrire une nouvelle distribution en utilisant Dist::Zilla
+? convert-dist ? migrer une distribution existante vers Dist::Zilla
+

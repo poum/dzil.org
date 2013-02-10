@@ -1,0 +1,222 @@
+=head1 Ecrire vos propres plugins 
+
+Dist::Zilla ne fait presque rien par lui-même. Tout est réalisé par des
+plugins. Il est fourni avec une grande pile de plugins qui répondent à 
+un tas de besoin et il y en a beaucoup plus de disponible sur CPAN,
+mais parfois vous aurez besoin que Dist::Zilla fasse quelque chose dont 
+personne d'autre n'avait eu besoin auparavant ou qui est très spécifique
+à votre propre distribution. Quand cela se produit, vous pouvez écrire votre
+propre plugin. Ecrire et tester des plugins est facile. Nous allons en écrire 
+un petit dès maintenant.
+
+=head2 Connaître vos rôles
+
+Les plugins sont tous exécutés à la demande selon les rôles qu'ils jouent. Quand
+des fichiers doivent être collectés pour peupler la distribution, les plugins
+FileGatherer sont exécutés. Quand la distribution a besoin d'une vérification
+finale avant la livraison, les plugins BeforeRelease dont exécutés. Vous devriez
+lire L<comment les distributions sont construires|@how-build-works>
+pour obtenir une vie sur certains des roles de base, et voir la documentation
+de base pour une liste complète des rôles des plugins. Ceci vous aidera à savoir
+quel type de plugin vous voulez écrire.
+
+Pour notre exemple, vous allons écrire un plugin vraiment basique qui ajoute
+un simple petit fichier à notre distribution. Cela signifie que c'est un
+FileGatherer. En lisant les documentations concernant FileGatherer,
+nous voyons que nous avons simplement à fournir une méthode, F<gather_files>,
+qui peut ensuite ajouter des fichiers à l'aide de la méthode C<add_file>. C<add_file> 
+reçoit un objet que fait Dist::Zilla::Role::File et ce fichier devient une part
+de notre distribution. Ainsi notre première passe sur ce plugin ressemble à ceci :
+distribution.  So, our first pass at this plugin looks like this:
+
+  #!perl
+  package Dist::Zilla::Plugin::Credits;
+  use Moose;
+  with 'Dist::Zilla::Role::FileGatherer';
+
+  use Dist::Zilla::File::InMemory;
+
+  sub gather_files {
+    my ($self) = @_;
+
+    $self->add_file(
+      Dist::Zilla::File::InMemory->new(
+        name    => 'CREDITS',
+        content => "Thanks to Dist::Zilla for building this dist!\n",
+      )
+    );
+  }
+
+  1;
+
+... et ça y est ! Pour utiliser notre plugin, nous ajoutons simplement C<[Credits]> à notre
+F<dist.ini>.
+
+=head2 Rendre les plugins configurables
+
+Souvent, nous voulons rendre notre plugin configurable. C'est facile, également. 
+Nous lui donnons simplement certains attributs. Par exemple, nous pourrions vouloir
+rendre le nom du fichier configurable :
+
+  #!perl
+  package Dist::Zilla::Plugin::Credits;
+  use Moose;
+  with 'Dist::Zilla::Role::FileGatherer';
+
+  use Dist::Zilla::File::InMemory;
+
+  has filename => (is => 'ro', isa => 'Str', default => 'CREDITS');
+
+  sub gather_files {
+    my ($self) = @_;
+
+    $self->add_file(
+      Dist::Zilla::File::InMemory->new(
+        name    => $self->filename,
+        content => "Thanks to Dist::Zilla for building this dist!\n",
+      )
+    );
+  }
+
+Maintenant, l'utilisateur peut simplement ajouter C<[Credits]>, comme précédemment, ou bien il
+peut le passer dans la configuration :
+
+  #!vim dosini
+  [Credits]
+  filename = merci.txt
+
+Si vous voulez une option de configuration qui prend plus d'une valeur, vous
+aurez besoin de la signaler comme un argument multi valué en ayant son nom
+renvoyé par C<mvp_multivalue_args>.
+
+  #!perl
+  package Dist::Zilla::Plugin::Credits;
+  use Moose;
+  with 'Dist::Zilla::Role::FileGatherer';
+
+  use Dist::Zilla::File::InMemory;
+
+  has filename => (is => 'ro', isa => 'Str', default => 'CREDITS');
+
+  has thank => (is => 'ro', isa => 'ArrayRef[Str]', default => []);
+
+  sub mvp_multivalue_args { return qw(thank) }
+
+  sub gather_files {
+    my ($self) = @_;
+
+    $self->add_file(
+      Dist::Zilla::File::InMemory->new(
+        name    => $self->filename,
+        content => join(qq{\n},
+          "Thanks to Dist::Zilla for building this dist!\n",
+          map {; "Thanks to $_!\n" } @{ $self->thank }
+        ),
+      )
+    );
+  }
+
+Maintenant, l'utilisateur peut utiliser cette configuration :
+
+  #!vim dosini
+  [Credits]
+  filename = merci.txt
+  thank    = E. X. Emple
+  thank    = B. Spiel
+  thank    = The Academy
+
+=head2 Tester votre plugin
+
+Maintenant vous avez un plugin qui fait plus ou moins ce que vous voulez, vous
+devriez quelques tests. (Alternativement, vous devriez avoir écrit des tests
+dès maintenant. Sentez-vous libre de prétendre que nous n'avez pas lu
+d'abord la première partie, dans ce cas).
+
+Vous aurez besoin d'inclure une distribution factice qui sera utilisée pour
+faire un test de construction durant vos tests. Ceci pourra devenir plus facile
+avec des futures versions de Dist::Zilla, mais ça ne l'est pas trop actuellement.
+Créez un répertoire à la racine de la distribution - j'utilise habituellement 
+F<corpus> - puis créez une petite distribution factice dedans. Nous appellerons
+cette distribution DZT pour le moment. Vous pouvez utiliser 
+C<dzil new> ou simplement créer un F<lib/DZT.pm>. En fait, je suggère que vous
+fassiez un F<lib/DZT/Sample.pm> qui facilitera les tests. Pour éviter que F<corpus>
+soit indexé, vous pourriez vouloir utiliser le plugin MetaNoIndex pour l'exclure
+de l'indexation de PAUSE. Vérifiez que votre distribution de test ne possède pas
+un F<dist.ini>.
+
+A ce point, vous devriez avoir les fichiers suivant dans votre distribution de plugin :
+
+  corpus/DZT/lib/DZT.pm
+  lib/Dist/Zilla/Plugin/Credits.pm
+  t/credits.t
+  dist.ini
+
+Vos tests pour le plugin "Credits" ne nécessitent pas de propriétés spéciales 
+de notre distribution, donc nous pouvons simplement faire un simple test tel que celui-ci :
+
+  #!perl
+  # t/credits.t
+  use strict;
+  use warnings;
+  use Test::More 0.88;
+
+  use Test::DZil;
+
+  my $tzil = Builder->from_config(
+    { dist_root => 'corpus/DZT' },
+    {
+      add_files => {
+        'source/dist.ini' => simple_ini(
+          # Par défaut, source/dist.ini hérite du dist.ini du module parent
+          # Cette référence de hachage peut les surcharger, si nécessaire.
+          {
+            # author => "Un autre auteur",
+          },
+          # Les arguments suivants définissent les plugins importés :
+          # [GatherDir]
+          'GatherDir',
+          # [Credits]
+          # filename = thanks.txt
+          # thank = E. X. Ample
+          # thank = The Academy
+          [
+            Credits => {
+                filename => 'thanks.txt',
+                thank => [
+                'E. X. Ample',
+                'The Academy',
+                ],
+            },
+          ],
+        ),
+      },
+    },
+  );
+
+  $tzil->build;
+
+  my $contents = $tzil->slurp_file('build/thanks.txt');
+
+  like($contents, qr/E\. X\. Emple/, "nous avons remercié la première cible");
+  like($contents, qr/The Academy/,   "nous avons remercié la deuxième cible");
+
+  done_testing;
+
+La bibliothèque L<Test::DZil> inclut un ensemble de routines pour vous aider
+à tester votre distribution, en commençant avec C<Builder> qui renvoie un objet 
+Dist::Zilla::Dist::Builder, qui est pré-mixé avec le comportement de 
+L<Dist::Zilla::Tester>. Ceci nous permet de passer des choses à sa méthode
+C<from_config> telle que C<add_files> qui ajoute des fichiers à la racine de la
+distribution avant que la construction ne démarre. Elle prend également 
+le répertoire source (F<corpus/DZT>) et le copie dans un nouveau répertoire
+temporaire si bien le matériau source ne sera pas altéré par les tests.
+
+Quand C<< $tzil->build >> est appelé, la distribution est construite dans un autre
+répertoire temporaire. Lors des tests suivants, vous pourrez chercher des fichiers
+sources dans le répertoire relatif F<source> et construire des fichiers dans le
+répertoire relatif F<build>. C'est juste ce que nous faisons, ci-dessus, quand
+nous utilisons la méthode C<slurp_file> pour obtenir le contenu d'un fichier 
+que nous nous attendons à voir exister dans notre distribution une fois construite. 
+
+=for cyoa
+? how-build-works ? apprendre ce qui concerne les types de plugin et comment le processus de construction fonctionne
